@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-import getColorsByType, {
-  pokemonTypes,
-  type PokemonType,
-} from "@/helper/PokemonTypes";
+import getColorsByType, { pokemonTypes } from "@/helper/PokemonTypes";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -25,45 +22,61 @@ import {
 import { Skeleton } from "./ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import getToggleVariants from "@/helper/ToggleVariants";
+import { Button } from "./ui/button";
+import { Eye, Info, Link } from "lucide-react";
+import type { Pokemon } from "@/types/pokemon";
 
-const LIMIT = 20;
+const LIMIT = 24;
 
 export default function PokemonList() {
   const [page, setPage] = useState(1);
-  const [pokemon, setPokemon] = useState<any[]>([]);
+  const [pokemon, setPokemon] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
-  const [type, setTypes] = useState<typeof pokemonTypes>([]);
+  const [type, setTypes] = useState<(typeof pokemonTypes)[number][]>([]);
 
   const fetchPokemon = async (pageNumber: number) => {
     setLoading(true);
 
     const offset = (pageNumber - 1) * LIMIT;
 
-    const res =
-      type.length === 0
-        ? await fetch(
-            `https://pokeapi.co/api/v2/pokemon/?limit=${LIMIT}&offset=${offset}`,
-          )
-        : await fetch(`https://pokeapi.co/api/v2/type/${type}/`);
-    const data = await res.json();
-    setTotal(data.count ?? data.pokemon.length);
+    if (type.length === 0) {
+      const res = await fetch(
+        `https://pokeapi.co/api/v2/pokemon/?limit=${LIMIT}&offset=${offset}`,
+      );
+      const data = await res.json();
 
-    const detailed =
-      type.length === 0
-        ? await Promise.all(
-            data.results.map(async (poke: any) => {
-              const res = await fetch(poke.url);
-              return res.json();
-            }),
-          )
-        : await Promise.all(
-            data.pokemon.map(async (poke: any) => {
-              const res = await fetch(poke.pokemon.url);
-              return res.json();
-            }),
-          );
-    setPokemon(detailed);
+      setTotal(data.count);
+
+      const detailed = await Promise.all(
+        data.results.map(async (poke: any) => {
+          const res = await fetch(poke.url);
+          return res.json();
+        }),
+      );
+
+      setPokemon(detailed);
+    } else {
+      const res = await fetch(`https://pokeapi.co/api/v2/type/${type[0]}`);
+      const data = await res.json();
+
+      const allPokemon = data.pokemon;
+
+      setTotal(allPokemon.length);
+
+      //  PAGINACIÓN MANUAL
+      const paginated = allPokemon.slice(offset, offset + LIMIT);
+
+      const detailed = await Promise.all(
+        paginated.map(async (poke: any) => {
+          const res = await fetch(poke.pokemon.url);
+          return res.json();
+        }),
+      );
+
+      setPokemon(detailed);
+    }
+
     setLoading(false);
   };
 
@@ -95,31 +108,26 @@ export default function PokemonList() {
 
   const totalPages = Math.ceil(total / LIMIT);
   return (
-    <div>
+    <div className=" w-full flex flex-col items-center justify-center p-4">
       {pokemonTypes.length > 0 && (
         <div className="flex gap-2 mb-4">
           <ToggleGroup
+            spacing={1}
             type="single"
-            spacing={2}
             value={type[0] || ""}
             onValueChange={(value) => {
               if (!value) {
                 setTypes([]);
               } else {
-                setTypes([value as PokemonType]);
+                setTypes([value as (typeof pokemonTypes)[number]]);
               }
+              setPage(1);
             }}
           >
             {pokemonTypes.map((t) => (
               <ToggleGroupItem
+                className="cursor-pointer"
                 variant={getToggleVariants(t)}
-                onClick={() => {
-                  setTypes((prev) =>
-                    prev.includes(t)
-                      ? prev.filter((v) => v !== t)
-                      : [...prev, t],
-                  );
-                }}
                 key={t}
                 value={t}
               >
@@ -144,14 +152,26 @@ export default function PokemonList() {
           ))}
         </div>
       ) : (
-        <div className="grid md:grid-cols-3 grid-cols-2 gap-4">
+        <div className="grid w-full lg:grid-cols-6 md:grid-cols-3 grid-cols-1 gap-4 ">
           {pokemon.map((poke) => (
-            <Card key={poke.id}>
-              <CardHeader>
-                <CardTitle>{poke.name.toUpperCase()}</CardTitle>
-                <CardDescription>Card Description</CardDescription>
+            <Card
+              key={poke.id}
+              className={`w-full max-w-xs text-white`}
+              style={{
+                background: `linear-gradient(135deg, ${getColorsByType(
+                  poke.types[0].type.name,
+                )}, ${poke.types[1]?.type.name !== undefined ? getColorsByType(poke?.types[1]?.type.name) : "lightgray"})`,
+                borderColor: "lightgrey",
+                // borderImage: `linear-gradient(135deg, ${getColorsByType(poke?.types[0]?.type.name)}, ${getColorsByType(poke?.types[0]?.type.name)}) 1`,
+              }}
+            >
+              <CardHeader className="flex justify-between">
+                <div>
+                  <CardTitle>{poke.name.toUpperCase()}</CardTitle>
+                  <CardDescription>#{poke.id}</CardDescription>
+                </div>
                 <CardAction>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 flex-wrap ml-8">
                     {poke.types.map((type: { type: { name: string } }) => (
                       <Badge
                         key={type.type.name}
@@ -165,13 +185,25 @@ export default function PokemonList() {
                   </div>
                 </CardAction>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex justify-center">
                 {poke.sprites.front_default && (
-                  <img src={poke.sprites.front_default} alt={poke.name} />
+                  <img
+                    width={150}
+                    height={150}
+                    src={poke.sprites.front_default}
+                    alt={poke.name}
+                  />
                 )}
               </CardContent>
               <CardFooter>
-                <p>Card Footer</p>
+                <div className="flex justify-between w-full">
+                  <div className=" p-1 rounded">
+                    <strong>Height:</strong> {poke.height}
+                  </div>
+                  <div className=" p-1 rounded">
+                    <strong>Weight:</strong> {poke.weight}
+                  </div>
+                </div>
               </CardFooter>
             </Card>
           ))}

@@ -19,9 +19,7 @@ export const pokemonTypes = [
   "fairy",
 ];
 
-export type PokemonType = (typeof pokemonTypes)[number];
-
-function getColorsByType(type: PokemonType) {
+function getColorsByType(type: (typeof pokemonTypes)[number]) {
   switch (type) {
     case "fire":
       return "#E62828";
@@ -58,10 +56,6 @@ function getColorsByType(type: PokemonType) {
     case "fairy":
       return "#EF71F0";
     case "normal":
-      return "#A0A2A0";
-    case "default":
-      return "#A0A2A0";
-    case "outline":
       return "#A0A2A0";
     default:
       return "#A0A2A0";
