@@ -138,7 +138,7 @@ export default function PokemonList() {
         </div>
       )}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid w-full lg:grid-cols-6 md:grid-cols-3 grid-cols-1 gap-4">
           {Array.from({ length: 20 }).map((_, i) => (
             <Card className="w-full max-w-xs">
               <CardHeader>
