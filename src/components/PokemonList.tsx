@@ -160,7 +160,7 @@ export default function PokemonList() {
               size={"normal"}
               asChild
             >
-              <a href={`/pokedex/${poke.name}`}>
+              <a href={`/pokedex/${poke.name}`} data-astro-prefetch>
                 <Card
                   key={poke.id}
                   className={`w-full max-w-xs text-white`}
@@ -199,6 +199,7 @@ export default function PokemonList() {
                         height={150}
                         src={poke.sprites.front_default}
                         alt={poke.name}
+                        style={{ viewTransitionName: `sprite-${poke.name}` }} // 👈
                       />
                     )}
                   </CardContent>
