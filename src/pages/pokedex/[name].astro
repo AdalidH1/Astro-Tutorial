@@ -39,6 +39,8 @@ export async function getStaticPaths() {
 }
 
 const { poke } = Astro.props;
+const { name } = Astro.params;
+
 const data = poke as Pokemon;
 
 const abilities = await Promise.all(
@@ -268,10 +270,7 @@ const evolutions = getAllEvolutions(evoData.chain);
             }
           </CardContent>
           <CardFooter className="flex w-full justify-end">
-            <Button>
-              <a href="/moves"> See more... </a>
-            </Button>
-            <DrawerComponent client:load />
+            <DrawerComponent name={name} client:load />
           </CardFooter>
         </Card>
       </div>
